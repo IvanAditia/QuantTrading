@@ -1,11 +1,9 @@
 import pandas as pd
+import yfinance as yf
 
-from src.data.loader import load_csv
+df = yf.download("GC=F", interval="1m", period="7d")
 
-path = load_csv('')
+print(df.tail())
 
-df = pd.read_csv(path)
+df.to_csv("../data/raw/GC=F_1m.csv")
 
-myvar = pd.DataFrame(data)
-
-print(myvar.loc[[0, 1]])
