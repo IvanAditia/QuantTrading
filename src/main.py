@@ -1,10 +1,17 @@
-from unittest import result
-from src.data.loader import load_csv
-from src.analysis.momentum import analyze_momentum
+from src.data.download import download
+import sys
+
+mode = sys.argv[1]
 
 def main():
-    df = load_csv("data/raw/GC=F_5m.csv")
 
-    result = analyze_momentum(df)
+    if mode == 'download':
+        download()
 
-    print(result.head())
+
+
+
+
+
+
+
