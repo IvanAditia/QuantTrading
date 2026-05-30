@@ -1,10 +1,12 @@
-from importlib.resources import path
 import pandas as pd
-from config.paths import DATA_DIR
+from src.config.paths import DATA_DIR
+from src.data.cleaner import clean_data
 
-def load_csv(df):
-    path = DATA_DIR / 'XAUUSD_M1.csv'
+def load_csv():
+    path = pd.read_csv(DATA_DIR / 'XAUUSD_M1.csv')
 
     df = pd.DataFrame(path)
 
-    
+    df = clean_data(df)
+
+    return df
