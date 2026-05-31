@@ -1,51 +1,65 @@
-from email import header
-from wsgiref import headers
+import MetaTrader5 as mt5
 import pandas as pd
-from tabulate import tabulate
-
-import atexit
-
-
+from tabulate  import tabulate
 
 df = pd.read_csv('../data/XAUUSD_M1.csv')
 
-df = pd.DataFrame(df)
+
+print(symbol.trade_contract_size)
 
 def test(df):
-    df['range_candle'] = abs(df['open'] - df['close'])
 
-    # rata-rata candle yang akan bullish
+    # CANDLE
+    # ======
+
+    df['body'] = abs(df['close'] - df['open'])
+    df['upper_wick'] = df['high'] - df[['close', 'open']].max(axis=1)
+    df['lower_wick'] = df[['open', 'close']].min(axis=1) - df['low']
+
+    # KRITERIA
+    # ========
+
     df['bull_candle'] = df['close'] > df['open']
+    df['bear_candle'] = df['close'] < df['open']
     df['bull_1'] = df['close'].shift(-1) > df['open'].shift(-1)
     df['bull_2'] = df['close'].shift(-2) > df['open'].shift(-2)
-    df['mean_price'] = df['range_candle'].rolling(14).mean()
+    df['bear_1'] = df['close'].shift(-1) < df['open'].shift(-1)
+    df['bear_2'] = df['close'].shift(-2) < df['open'].shift(-2)
 
+    # INDIKATOR
+    # =========
 
-    df['valid_candle'] = (
+    df['mean'] = df['close'].rolling(14).mean()
+    df['sd'] = df['close'].rolling(14).std()
+
+    # CANDLE VALID
+    # ============
+
+    df['bull_valid'] = (
         (df['bull_candle']) &
-        (df['bull_1']) &
+        (df['close'] > df['mean']) &
+        (df['bull_1'])  & 
         (df['bull_2'])
     )
 
-    valid_df = df[df['valid_candle']]
-
-    mean = valid_df['range_candle'].mean()
-
-
-    
-    print(mean)
-    print(
-        tabulate(
-            valid_df.head(),
-            headers='keys',
-            tablefmt='grid'
-        )
+    df['bear_valid'] = (
+        (df['bear_candle']) & 
+        (df['close'] < df['mean']) &
+        (df['bear_1']) &
+        (df['bear_2'])
     )
-    print(' jumlah data yang sesuai adalah :', valid_df.sum())
-    
 
+    result = df[
+        df['bull_valid'] |
+        df['bear_valid']
+    ]
 
+    result = result[
+        ['high', 'open', 'close', 'low']
+    ]
 
-    return df 
+    lot = {''}
+    return
+
 
 test(df)
