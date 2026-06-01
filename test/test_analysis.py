@@ -1,7 +1,3 @@
-from email import header
-from importlib.metadata import entry_points
-from subprocess import HIGH_PRIORITY_CLASS
-from turtle import position
 import pandas as pd
 from tabulate  import tabulate
 import ta
@@ -69,11 +65,14 @@ def test(df):
 
     position = 0
     initial_balance = 100
-    lot = 0.02
+    lot = 0.1
+    contract_size = 1
     balance = initial_balance
     trade = []
 
     df['range_body'] = result['body'].mean()
+
+    print(df['range_body'])
 
 
     df['buy_entry'] = (
@@ -122,7 +121,7 @@ def test(df):
             tp_price = entry_price + (df['sd'].iloc[i] * 2)
 
             if df['low'].iloc[i] <= sl_price:
-                profit = (sl_price - entry_price) * 1 * lot
+                profit = (sl_price - entry_price) * contract_size * lot
                 balance += profit
                 trade.append({
                     'type' : 'BUY SL',
@@ -133,7 +132,7 @@ def test(df):
                 position = 0
 
             elif df['high'].iloc[i] >= tp_price :
-                profit = (tp_price - entry_price) * 1 * lot
+                profit = (tp_price - entry_price) * contract_size * lot
                 balance += profit
                 trade.append({
                     'type' : 'BUY TP',
@@ -144,7 +143,7 @@ def test(df):
                 position = 0
 
             elif df['adx'].iloc[i] <= 15 or df['close'].iloc[i] < df['mean'].iloc[i] :
-                profit = (price - entry_price) * 1 * lot
+                profit = (price - entry_price) * contract_size * lot
                 balance += profit
                 trade.append({
                     'type' : 'BUY EXIT',
@@ -160,7 +159,7 @@ def test(df):
             tp_price = entry_price - (df['sd'].iloc[i] * 2)
 
             if df['high'].iloc[i] >= sl_price:
-                profit = (entry_price - sl_price) * 1 * lot
+                profit = (entry_price - sl_price) * contract_size * lot
                 balance += profit
                 trade.append({
                     'type': 'SELL SL',
@@ -171,7 +170,7 @@ def test(df):
                 position = 0
 
             elif df['low'].iloc[i] <= tp_price:
-                profit = (entry_price - tp_price) * 1 * lot
+                profit = (entry_price - tp_price) * contract_size * lot
                 balance += profit
                 trade.append({
                     'type': 'SELL TP',
@@ -182,7 +181,7 @@ def test(df):
                 position = 0
 
             elif df['adx'].iloc[i] <= 15 or df['close'].iloc[i] > df['mean'].iloc[i]:
-                profit = (entry_price - price) * 1 * lot
+                profit = (entry_price - price) * contract_size * lot
                 balance += profit
                 trade.append({
                     'type' : 'SELL EXIT',
@@ -282,6 +281,7 @@ def test(df):
     max_win = trade_df['profit'].max()
     max_loss = trade_df['profit'].min()
 
+
     saldo =  [
         {'TYPE':'SALDO AWAL ', 'JUMLAH':    initial_balance },
         {'TYPE':'SALDO AKHIR', 'JUMLAH': balance},
@@ -298,6 +298,38 @@ def test(df):
         {'TYPE': 'TOTAL', 'TOTAL TRADE':total_trade, 'PROFIT': total_profit}
     ]
 
+    trade_df['time'] = df.loc[
+            trade_df['index'],
+            'time'
+    ].values
+
+    trade_df['time'] = pd.to_datetime(
+        trade_df['time']
+    )
+
+    close_trade = trade_df[
+        trade_df['type'].isin([
+            'BUY EXIT', \
+            'SELL EXIT',
+            'BUY TP',
+            'SELL TP',
+            'BUY SL',
+            'SELL SL'
+        ])
+    ].copy()
+
+    daily_profit = (
+        close_trade
+        .groupby(
+            close_trade['time'].dt.date
+        )['profit']
+        .sum()
+    )
+
+    daily_balance = (
+        daily_profit.cumsum()
+        + initial_balance        
+    )
 
     print('\nINFORMASI SALDO:')
     print(
@@ -320,6 +352,21 @@ def test(df):
     print(f'WIN TERTINGGI: {max_win.round(2)}')
     print(f'LOSS TERTINGGI: {max_loss.round(2)}')
     print(f'WINRATE: {winrate.round()}%')
+
+    plt.figure(figsize=(15, 6))
+    plt.plot(
+        daily_balance.index,
+        daily_balance.values
+    )
+    plt.title('Balance Growth per Day')
+    plt.xlabel('tanggal')
+    plt.ylabel('balance')
+
+    plt.grid(True)
+
+    plt.show()
+
+    trade_df.to_excel('../outputs/results/gold_m1_backtest.xlsx')
 
     return
 

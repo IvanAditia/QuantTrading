@@ -13,12 +13,5 @@ def indicator(df):
         close = df['close'],
         window = 14
     ).adx()
-
-    print(
-        tabulate(
-            df[['mean', 'sd', 'adx']].tail(2),
-            headers='keys',
-            tablefmt='grid'
-        )
-    )
+        
     return df
